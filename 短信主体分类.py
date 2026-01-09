@@ -1,6 +1,81 @@
 from typing import Dict, List, Tuple,Dict, Any
 import re
 #识别发送方主体
+#手机号识别
+
+# 短号码映射（特殊处理）
+SHORT_CODE_MAPPING = {
+    # 原有映射保留
+    '999': '运营商',  # 运营商营销服务（Mobifone核心服务）
+    '9199': '运营商',  # 运营商客户服务（Mobifone套餐服务）
+    '191': '运营商',  # Viettel服务号码
+    '1595': '运营商',  # 特殊营销服务（Viettel）
+    '195': '运营商',  # Mobifone客服
+    '789': '运营商',  # Mobifone套餐注册
+    # '155': '其他',
+    '9748': '运营商',  # Viettel游戏服务
+    '9241': '运营商',  # Mobifone退订服务
+    '1402': '其他',
+    '9488': '运营商',  # Vinaphone视频服务
+    '9969': '银行',  # 银行特殊服务
+    # '5092': '其他',  # 验证码常用短号
+    # '8099': '其他',  # 验证码常用短号
+    # '8044': '其他',  # 验证码常用短号
+    '1221': '运营商',  # 音乐服务（IMUZIK）
+    '9062': '运营商',  # 视频服务（Viettel）
+
+    # ====== 新增映射（基于完整分析） ======
+    # 运营商核心服务
+    '198': '运营商',  # Viettel主服务号
+    '9923': '运营商',  # Vinaphone营销服务
+    '9090': '运营商',  # Mobifone客服
+    '1077': '运营商',  # Mobifone数据服务
+    '193': '运营商',  # Viettel通知服务
+    '333': '运营商',  # Vinaphone抽奖服务
+    '9135': '运营商',  # Viettel农业服务
+    '909': '运营商',  # Viettel客服
+    '1331': '运营商',  # TV360电视服务
+    '199': '运营商',  # Viettel客服主号
+    '5108': '运营商',  # Vinaphone娱乐服务
+    '9628': '运营商',  # Vinaphone娱乐服务
+    '1567': '运营商',  # 未明确运营商服务
+    '1356': '运营商',  # Viettel营销服务
+
+    # 金融服务
+    '1313': '贷款机构',  # 多品牌金融服务（CAKE/VIB等）
+    '1551': '贷款机构',  # 金融客服专线（CAKE/HomeCredit等）
+    '90004': '银行',  # 银行服务（VIB/FE CREDIT）
+
+    # 其他服务
+    '6789': '其他',  # VNSKY娱乐平台
+    '1250': '其他',  # VNSKY客服
+    # '777556666': '其他', # 未明确服务
+    # '777': '其他',     # 未明确服务
+    '1379': '银行'  # 银行服务（VIB）但已归类到1551
+    # '996': '其他',     # 未明确服务
+    # '9947': '其他',    # 未明确服务
+    # '135': '其他',     # 未明确服务
+    # '156': '其他',     # 未明确服务
+    # '159': '其他',     # 未明确服务
+    # '169': '其他',     # 未明确服务
+    # '179': '其他',     # 未明确服务
+    # '189': '其他',     # 未明确服务
+    # '1999': '其他',    # 未明确服务
+
+    # # 特殊服务（新增类别）
+    # '1221': '娱乐',    # IMUZIK音乐服务（从运营商调整为娱乐）
+    # '9062': '娱乐',    # 视频服务（从运营商调整为娱乐）
+}
+
+def classify_sender(sender: str) -> Tuple[str, str]:
+    """根据发送方分类短信"""
+    sender_lower = sender.lower()
+
+    # 1. 检查短号码映射
+    if sender_lower in SHORT_CODE_MAPPING:
+        primary_category = SHORT_CODE_MAPPING[sender_lower]
+
+    return '', ''
 def detect_primary_category(text: str, sender: str = "") -> Tuple[str, List[str]]:
     """改进的一级分类检测函数，使用正则表达式优化性能"""
 
@@ -209,6 +284,24 @@ def detect_behavior_category(text: str, sender: str = "") -> Tuple[str, List[str
         return '欺诈中介', decoy_matches
 
     return '', []
+
+def classify_sms(text: str, sender: str = "") -> Dict[str, str]:
+    """分类短信并生成正则表达式模式，考虑发送方"""
+    if not text.strip():
+        return {"发送主体": "", "内容行为": "", "pattern": ""}
+
+    # 检测一级分类（考虑发送方）
+    primary_category, primary_kws = detect_primary_category(text, sender)
+
+    # 检测二级分类（考虑发送方）
+    secondary_category, secondary_kws = detect_behavior_category(text, primary_category, sender)
+
+
+    return {
+        "一级分类": primary_category,
+        "二级分类": secondary_category
+    }
+
 
 #金额提取函数
 def extract_amount_with_context(text: str) -> List[Dict[str, Any]]:
